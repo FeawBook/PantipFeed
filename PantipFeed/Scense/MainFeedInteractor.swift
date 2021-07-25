@@ -14,6 +14,8 @@ import UIKit
 
 protocol MainFeedBusinessLogic {
     func doSomething(request: MainFeed.Something.Request)
+    func getTopicsData(request: MainFeed.GetTopicData.Request)
+    func getTagsData(request: MainFeed.GetTagsData.Request)
 }
 
 protocol MainFeedDataStore {
@@ -34,5 +36,32 @@ class MainFeedInteractor: MainFeedBusinessLogic, MainFeedDataStore {
         
         let response = MainFeed.Something.Response()
         presenter?.presentSomething(response: response)
+    }
+    
+    func getTopicsData(request: MainFeed.GetTopicData.Request) {
+        worker = MainFeedWorker()
+        worker?.fetchTopics(completionHandler: { (topic) in
+            guard let isSuccess = topic?.success else {
+                return
+            }
+            if isSuccess {
+                if let topicData = topic?.data {
+                    self.presenter?.presentTopic(response: MainFeed.GetTopicData.Response(topicsResponse: topicData))
+                }
+            } else {
+                self.presenter?.presentError(errorMessage: "Service fail")
+            }
+        }, errorHandler: { (error) in
+            self.presenter?.presentError(errorMessage: error?.localizedDescription ?? "")
+        })
+    }
+    
+    func getTagsData(request: MainFeed.GetTagsData.Request) {
+        worker = MainFeedWorker()
+        worker?.fetchTags(completionHandler: { (tagData) in
+            self.presenter?.presentTag(response: MainFeed.GetTagsData.Response(tagsResponse: tagData))
+        }, errorHandler: { (error) in
+            self.presenter?.presentError(errorMessage: error?.localizedDescription ?? "")
+        })
     }
 }

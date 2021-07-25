@@ -9,6 +9,11 @@ import UIKit
 
 class MainFeedTableViewCell: UITableViewCell {
 
+    @IBOutlet weak var topicImageView: UIImageView!
+    @IBOutlet weak var detailLabel: UILabel!
+    @IBOutlet weak var secondaryLabel: UILabel!
+    @IBOutlet weak var totalLabel: UILabel!
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code

@@ -11,35 +11,44 @@
 //
 
 import UIKit
+import Kingfisher
 
-protocol MainFeedDisplayLogic: class
-{
+protocol MainFeedDisplayLogic: AnyObject {
     func displaySomething(viewModel: MainFeed.Something.ViewModel)
+    func displayTopicData(viewModel: MainFeed.GetTopicData.ViewModel)
+    func displayTagsData(viewModel: MainFeed.GetTagsData.ViewModel)
+    func displayError(errorMessage: String)
 }
 
-class MainFeedViewController: UIViewController, MainFeedDisplayLogic
-{
+class MainFeedViewController: UIViewController, MainFeedDisplayLogic {
     var interactor: MainFeedBusinessLogic?
     var router: (NSObjectProtocol & MainFeedRoutingLogic & MainFeedDataPassing)?
     
-    // MARK: Object lifecycle
+    @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var mainStackView: UIStackView!
+    @IBOutlet weak var mainScrollView: UIScrollView!
+    var isLoading = false
+    let refreshControl = UIRefreshControl()
+    let refreshAllControl = UIRefreshControl()
+    var topicsList: [TopicDetail]? = []
+    var topicsListMore: [TopicDetail]? = []
+    var tagsList: [TagsDetail]?
     
-    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?)
-    {
+    // MARK: Object lifecycle
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         setup()
     }
     
-    required init?(coder aDecoder: NSCoder)
-    {
+    required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         setup()
     }
     
     // MARK: Setup
     
-    private func setup()
-    {
+    private func setup() {
         let viewController = self
         let interactor = MainFeedInteractor()
         let presenter = MainFeedPresenter()
@@ -54,8 +63,7 @@ class MainFeedViewController: UIViewController, MainFeedDisplayLogic
     
     // MARK: Routing
     
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?)
-    {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if let scene = segue.identifier {
             let selector = NSSelectorFromString("routeTo\(scene)WithSegue:")
             if let router = router, router.responds(to: selector) {
@@ -65,25 +73,201 @@ class MainFeedViewController: UIViewController, MainFeedDisplayLogic
     }
     
     // MARK: View lifecycle
-    
-    override func viewDidLoad()
-    {
+    override func viewDidLoad() {
         super.viewDidLoad()
+        self.setupView()
+        self.interactor?.getTopicsData(request: MainFeed.GetTopicData.Request())
+        self.interactor?.getTagsData(request: MainFeed.GetTagsData.Request())
         doSomething()
     }
     
-    // MARK: Do something
+    func setupView() {
+        self.tableView.register(UINib(nibName: "MainFeedTableViewCell", bundle: nil), forCellReuseIdentifier: "mainFeedTableViewCell")
+        self.collectionView.register(UINib(nibName: "MainFeedCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "mainFeedCollectionViewCell")
+        self.tableView.register(UINib(nibName: "LoadingTableViewCell", bundle: nil), forCellReuseIdentifier: "loading_cell")
+        self.tableView.delegate = self
+        self.tableView.dataSource = self
+        self.collectionView.dataSource = self
+        self.collectionView.delegate = self
+        refreshControl.tintColor = UIColor.white
+        refreshControl.addTarget(self, action: #selector(self.refresh(_:)), for: .valueChanged)
+        refreshAllControl.tintColor = UIColor.white
+        refreshAllControl.addTarget(self, action: #selector(self.refreshAll(_:)), for: .valueChanged)
+        self.tableView.addSubview(refreshControl)
+        self.mainScrollView.addSubview(refreshAllControl)
+    }
     
-    //@IBOutlet weak var nameTextField: UITextField!
+    @objc func refresh(_ sender: AnyObject) {
+        self.topicsList?.removeAll()
+        self.topicsListMore?.removeAll()
+        self.interactor?.getTopicsData(request: MainFeed.GetTopicData.Request())
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: {
+            self.tableView.reloadData()
+            self.refreshControl.endRefreshing()
+        })
+    }
     
-    func doSomething()
-    {
+    @objc func refreshAll(_ sender: AnyObject) {
+        self.topicsList?.removeAll()
+        self.topicsListMore?.removeAll()
+        self.tagsList?.removeAll()
+        self.interactor?.getTopicsData(request: MainFeed.GetTopicData.Request())
+        self.interactor?.getTagsData(request: MainFeed.GetTagsData.Request())
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: {
+            self.tableView.reloadData()
+            self.collectionView.reloadData()
+            self.refreshAllControl.endRefreshing()
+        })
+    }
+     
+    func doSomething() {
         let request = MainFeed.Something.Request()
         interactor?.doSomething(request: request)
     }
     
-    func displaySomething(viewModel: MainFeed.Something.ViewModel)
-    {
+    func displaySomething(viewModel: MainFeed.Something.ViewModel) {
         //nameTextField.text = viewModel.name
+    }
+    
+    private func loadMoreData() {
+        if !self.isLoading {
+            self.isLoading = true
+            DispatchQueue.global().async {
+                sleep(2)
+                DispatchQueue.main.async {
+                    for topic in self.topicsListMore ?? [] {
+                        self.topicsList?.append(topic)
+                    }
+                    self.topicsListMore?.removeAll()
+                    self.tableView.reloadData()
+                    self.isLoading = false
+                }
+            }
+        }
+    }
+    
+    func displayTopicData(viewModel: MainFeed.GetTopicData.ViewModel) {
+        if let topics = viewModel.topicsList?.topicList {
+            if topics.count > 10 {
+                for index in 0..<topics.count {
+                    if index > 10 {
+                        self.topicsListMore?.append(topics[index])
+                    } else {
+                        self.topicsList?.append(topics[index])
+                    }
+                }
+            } else {
+                self.topicsList = viewModel.topicsList?.topicList
+            }
+            self.tableView.reloadData()
+        }
+    }
+    
+    func displayTagsData(viewModel: MainFeed.GetTagsData.ViewModel) {
+        if let tags = viewModel.tagsResponse {
+            self.tagsList = tags
+            self.collectionView.reloadData()
+        }
+    }
+    
+    func displayError(errorMessage: String) {
+        let errorPopup = UIAlertController(title: "ขออภัย", message: "\(errorMessage)", preferredStyle: .alert)
+        errorPopup.addAction(UIAlertAction(title: "ตกลง", style: .default, handler: nil))
+        self.present(errorPopup, animated: true, completion: nil)
+    }
+}
+
+extension MainFeedViewController: UITableViewDataSource, UITableViewDelegate {
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 2
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if section == 1 {
+            return 1
+        }
+        return self.topicsList?.count ?? 0
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        if indexPath.section == 1 {
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: "loading_cell") as? LoadingTableViewCell else {
+                return UITableViewCell()
+            }
+            if isLoading {
+                cell.loadingView.startAnimating()
+            } else {
+                cell.isHidden = true
+            }
+            return cell
+        } else {
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: "mainFeedTableViewCell") as? MainFeedTableViewCell else {
+                return UITableViewCell()
+            }
+            cell.topicImageView?.kf.indicatorType = .activity
+            cell.topicImageView?.kf.setImage(
+                with: URL(string: self.topicsList?[indexPath.row].coverImg ?? ""),
+                placeholder: UIImage(named: "default_table_cell"),
+                options: [
+                    .scaleFactor(UIScreen.main.scale),
+                    .cacheOriginalImage
+                ])
+            cell.detailLabel?.text = self.topicsList?[indexPath.row].title ?? ""
+            cell.secondaryLabel.text = self.topicsList?[indexPath.row].author ?? ""
+            let viewCount = self.topicsList?[indexPath.row].viewCount ?? ""
+            if viewCount.count >= 4 {
+                cell.totalLabel.text = viewCount.split(separator: ",")[0] + "k"
+            } else if viewCount.count >= 9 {
+                cell.totalLabel.text = viewCount.split(separator: ",")[0] + "m"
+            } else {
+                cell.totalLabel.text = viewCount
+            }
+            
+            return cell
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if indexPath.section == 1 {
+            if isLoading {
+                return 44.0
+            } else {
+                return 0
+            }
+        } else {
+            return UITableView.automaticDimension
+        }
+    }
+    
+}
+
+extension MainFeedViewController: UICollectionViewDataSource, UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return self.tagsList?.count ?? 0
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "mainFeedCollectionViewCell", for: indexPath) as? MainFeedCollectionViewCell else {
+            return UICollectionViewCell()
+        }
+        cell.tagsImageView.kf.setImage(
+            with: URL(string: self.tagsList?[indexPath.row].imageUrl?.first ?? ""),
+            placeholder: UIImage(named: "default_collection_cell"),
+            options: [
+                .scaleFactor(UIScreen.main.scale),
+                .cacheOriginalImage
+            ])
+        cell.primaryTextLabel.text = self.tagsList?[indexPath.row].name ?? ""
+        return cell
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let offsetY = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+        
+        if (offsetY > contentHeight - scrollView.frame.size.height * 4) && !isLoading {
+            self.loadMoreData()
+        }
     }
 }

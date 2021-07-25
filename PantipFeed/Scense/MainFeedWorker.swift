@@ -12,9 +12,33 @@
 
 import UIKit
 
-class MainFeedWorker
-{
-    func doSomeWork()
-    {
+class MainFeedWorker {
+    func doSomeWork() {
+    }
+    
+    func fetchTags(completionHandler: @escaping (TagsResponse?) -> (), errorHandler: @escaping (Error?) -> ()) {
+        if let path = Bundle.main.path(forResource: "tags", ofType: "json") {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+                let jsonDecoder = try JSONDecoder().decode(TagsResponse.self, from: data)
+                completionHandler(jsonDecoder)
+            } catch(let error) {
+                errorHandler(error)
+            }
+        }
+       
+    }
+    
+    func fetchTopics(completionHandler: @escaping (TopicResponse?) -> (), errorHandler: @escaping (Error?) -> ()) {
+        if let path = Bundle.main.path(forResource: "topics", ofType: "json") {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+                let jsonDecoder = try JSONDecoder().decode(TopicResponse.self, from: data)
+                completionHandler(jsonDecoder)
+            } catch(let error) {
+                print(error.localizedDescription)
+                errorHandler(error)
+            }
+        }
     }
 }

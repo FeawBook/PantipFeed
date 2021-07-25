@@ -12,12 +12,10 @@
 
 import UIKit
 
-enum MainFeed
-{
+enum MainFeed {
     // MARK: Use cases
     
-    enum Something
-    {
+    enum Something {
         struct Request
         {
         }
@@ -26,6 +24,33 @@ enum MainFeed
         }
         struct ViewModel
         {
+        }
+    }
+    
+    enum GetTopicData {
+        struct Request {
+            
+        }
+        
+        struct Response {
+            let topicsResponse: TopicList?
+        }
+        
+        struct ViewModel {
+            let topicsList: TopicList?
+        }
+    }
+    
+    enum GetTagsData {
+        struct Request {
+        }
+        
+        struct Response {
+            let tagsResponse: TagsResponse?
+        }
+        
+        struct ViewModel {
+            let tagsResponse: [TagsDetail]?
         }
     }
 }

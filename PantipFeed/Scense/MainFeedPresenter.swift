@@ -12,9 +12,11 @@
 
 import UIKit
 
-protocol MainFeedPresentationLogic
-{
+protocol MainFeedPresentationLogic {
     func presentSomething(response: MainFeed.Something.Response)
+    func presentTopic(response: MainFeed.GetTopicData.Response)
+    func presentTag(response: MainFeed.GetTagsData.Response)
+    func presentError(errorMessage: String)
 }
 
 class MainFeedPresenter: MainFeedPresentationLogic
@@ -27,5 +29,17 @@ class MainFeedPresenter: MainFeedPresentationLogic
     {
         let viewModel = MainFeed.Something.ViewModel()
         viewController?.displaySomething(viewModel: viewModel)
+    }
+    
+    func presentTopic(response: MainFeed.GetTopicData.Response) {
+        viewController?.displayTopicData(viewModel: MainFeed.GetTopicData.ViewModel(topicsList: response.topicsResponse))
+    }
+    
+    func presentTag(response: MainFeed.GetTagsData.Response) {
+        viewController?.displayTagsData(viewModel: MainFeed.GetTagsData.ViewModel(tagsResponse: response.tagsResponse?.data ?? []))
+    }
+    
+    func presentError(errorMessage: String) {
+        self.viewController?.displayError(errorMessage: errorMessage)
     }
 }
