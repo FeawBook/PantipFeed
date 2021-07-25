@@ -13,7 +13,6 @@
 import UIKit
 
 protocol MainFeedPresentationLogic {
-    func presentSomething(response: MainFeed.Something.Response)
     func presentTopic(response: MainFeed.GetTopicData.Response)
     func presentTag(response: MainFeed.GetTagsData.Response)
     func presentError(errorMessage: String)
@@ -22,15 +21,7 @@ protocol MainFeedPresentationLogic {
 class MainFeedPresenter: MainFeedPresentationLogic
 {
     weak var viewController: MainFeedDisplayLogic?
-    
-    // MARK: Do something
-    
-    func presentSomething(response: MainFeed.Something.Response)
-    {
-        let viewModel = MainFeed.Something.ViewModel()
-        viewController?.displaySomething(viewModel: viewModel)
-    }
-    
+
     func presentTopic(response: MainFeed.GetTopicData.Response) {
         viewController?.displayTopicData(viewModel: MainFeed.GetTopicData.ViewModel(topicsList: response.topicsResponse))
     }

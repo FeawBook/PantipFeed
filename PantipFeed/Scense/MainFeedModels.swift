@@ -15,18 +15,6 @@ import UIKit
 enum MainFeed {
     // MARK: Use cases
     
-    enum Something {
-        struct Request
-        {
-        }
-        struct Response
-        {
-        }
-        struct ViewModel
-        {
-        }
-    }
-    
     enum GetTopicData {
         struct Request {
             

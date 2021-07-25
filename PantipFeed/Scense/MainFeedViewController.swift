@@ -14,7 +14,6 @@ import UIKit
 import Kingfisher
 
 protocol MainFeedDisplayLogic: AnyObject {
-    func displaySomething(viewModel: MainFeed.Something.ViewModel)
     func displayTopicData(viewModel: MainFeed.GetTopicData.ViewModel)
     func displayTagsData(viewModel: MainFeed.GetTagsData.ViewModel)
     func displayError(errorMessage: String)
@@ -78,7 +77,6 @@ class MainFeedViewController: UIViewController, MainFeedDisplayLogic {
         self.setupView()
         self.interactor?.getTopicsData(request: MainFeed.GetTopicData.Request())
         self.interactor?.getTagsData(request: MainFeed.GetTagsData.Request())
-        doSomething()
     }
     
     func setupView() {
@@ -119,16 +117,7 @@ class MainFeedViewController: UIViewController, MainFeedDisplayLogic {
             self.refreshAllControl.endRefreshing()
         })
     }
-     
-    func doSomething() {
-        let request = MainFeed.Something.Request()
-        interactor?.doSomething(request: request)
-    }
-    
-    func displaySomething(viewModel: MainFeed.Something.ViewModel) {
-        //nameTextField.text = viewModel.name
-    }
-    
+   
     private func loadMoreData() {
         if !self.isLoading {
             self.isLoading = true

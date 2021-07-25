@@ -13,7 +13,6 @@
 import UIKit
 
 protocol MainFeedBusinessLogic {
-    func doSomething(request: MainFeed.Something.Request)
     func getTopicsData(request: MainFeed.GetTopicData.Request)
     func getTagsData(request: MainFeed.GetTagsData.Request)
 }
@@ -26,17 +25,6 @@ class MainFeedInteractor: MainFeedBusinessLogic, MainFeedDataStore {
     var presenter: MainFeedPresentationLogic?
     var worker: MainFeedWorker?
     //var name: String = ""
-    
-    // MARK: Do something
-    
-    func doSomething(request: MainFeed.Something.Request)
-    {
-        worker = MainFeedWorker()
-        worker?.doSomeWork()
-        
-        let response = MainFeed.Something.Response()
-        presenter?.presentSomething(response: response)
-    }
     
     func getTopicsData(request: MainFeed.GetTopicData.Request) {
         worker = MainFeedWorker()
